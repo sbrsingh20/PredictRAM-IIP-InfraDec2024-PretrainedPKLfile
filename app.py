@@ -20,7 +20,6 @@ uploaded_model = st.sidebar.file_uploader("Upload your .pkl model file", type=["
 
 # Load the uploaded model if provided
 if uploaded_model is not None:
-    # Load the model from the uploaded file
     try:
         model = joblib.load(uploaded_model)
         model_details = {"model": "KNN", "r2_score": None, "mean_squared_error": None}
@@ -28,7 +27,6 @@ if uploaded_model is not None:
     except Exception as e:
         st.sidebar.error(f"Error loading model: {str(e)}")
 else:
-    # Default to the pre-saved model if no file is uploaded
     try:
         model = joblib.load('knn_infrastructure_prediction_model.pkl')
         model_details = joblib.load('knn_model_details.pkl')
@@ -72,9 +70,9 @@ if selected_stocks:
         # Show Infrastructure Prediction for each stock
         st.subheader(f"Infrastructure Prediction for {selected_stock}")
         
-        # User input for prediction (infrastructure data)
-        building_permits = st.sidebar.number_input("Building Permits (in billion)", min_value=0.0, step=0.1)
-        gov_infrastructure_spending = st.sidebar.number_input("Government Infrastructure Spending (in billion)", min_value=0.0, step=0.1)
+        # User input for prediction (infrastructure data) with unique keys
+        building_permits = st.sidebar.number_input(f"Building Permits for {selected_stock} (in billion)", min_value=0.0, step=0.1, key=f"building_permits_{selected_stock}")
+        gov_infrastructure_spending = st.sidebar.number_input(f"Government Infrastructure Spending for {selected_stock} (in billion)", min_value=0.0, step=0.1, key=f"gov_infrastructure_spending_{selected_stock}")
 
         # Create a DataFrame with user input
         input_data = pd.DataFrame([[building_permits, gov_infrastructure_spending]], columns=['Building_Permits', 'Government_Infrastructure_Spending'])
@@ -85,7 +83,7 @@ if selected_stocks:
                 prediction = model.predict(input_data)
                 st.write(f"Predicted Daily Return for {selected_stock}: {prediction[0]:.4f}")
 
-                # Additional details about the prediction
+                # Display the prediction result for the user
                 st.write("""
                     The predicted daily return represents how much the stock price of the selected stock is likely to change based on the 
                     given infrastructure data. A positive return indicates an increase, while a negative return represents a decrease.
