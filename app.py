@@ -47,61 +47,60 @@ if model:
         st.write("Model performance details are not available.")
 
 # User input for stock selection and prediction
-st.sidebar.header("Select Stock")
+st.sidebar.header("Select Stock(s)")
 
 # List of stock tickers to choose from
 stock_tickers = ['ITC.NS', 'TCS.NS', 'WIPRO.NS']
 
-# Stock selection dropdown
-selected_stock = st.sidebar.selectbox("Choose a stock:", stock_tickers)
+# Stock selection dropdown with multiple selection option
+selected_stocks = st.sidebar.multiselect("Choose stock(s):", stock_tickers)
 
-# Fetch stock data (adjusted close prices and returns)
-start_date = '2022-01-01'
-end_date = '2024-06-30'
-stock_data = yf.download(selected_stock, start=start_date, end=end_date)
+# Fetch stock data (adjusted close prices and returns) for selected stocks
+if selected_stocks:
+    for selected_stock in selected_stocks:
+        stock_data = yf.download(selected_stock, start='2022-01-01', end='2024-06-30')
+        stock_data['Daily_Return'] = stock_data['Adj Close'].pct_change().dropna()
 
-# Calculate daily returns for the selected stock
-stock_data['Daily_Return'] = stock_data['Adj Close'].pct_change().dropna()
+        # Display stock data and returns
+        st.subheader(f"Stock Data for {selected_stock}")
+        st.write(stock_data[['Adj Close', 'Daily_Return']].tail(10))  # Show last 10 rows of stock data
 
-# Display stock data and returns
-st.subheader(f"Stock Data for {selected_stock}")
-st.write(stock_data[['Adj Close', 'Daily_Return']].tail(10))  # Show last 10 rows of stock data
+        # Plot stock returns
+        st.subheader(f"Daily Returns for {selected_stock}")
+        st.line_chart(stock_data['Daily_Return'])
 
-# Plot stock returns
-st.subheader(f"Daily Returns for {selected_stock}")
-st.line_chart(stock_data['Daily_Return'])
-
-# User input for prediction (infrastructure data)
-st.sidebar.header("Input Features")
-
-# Getting input from the user
-building_permits = st.sidebar.number_input("Building Permits (in billion)", min_value=0.0, step=0.1)
-gov_infrastructure_spending = st.sidebar.number_input("Government Infrastructure Spending (in billion)", min_value=0.0, step=0.1)
-
-# Create a DataFrame with user input
-input_data = pd.DataFrame([[building_permits, gov_infrastructure_spending]], columns=['Building_Permits', 'Government_Infrastructure_Spending'])
-
-# Predict using the model
-if st.sidebar.button("Predict"):
-    if model:
-        prediction = model.predict(input_data)
-        st.subheader("Prediction")
-        st.write(f"Predicted Daily Return: {prediction[0]:.4f}")
-
-        # Additional details about the prediction
-        st.write("""
-            The predicted daily return represents how much the stock price of the selected stock is likely to change based on the 
-            given infrastructure data. A positive return indicates an increase, while a negative return represents a decrease.
-        """)
+        # Show Infrastructure Prediction for each stock
+        st.subheader(f"Infrastructure Prediction for {selected_stock}")
         
-        # Optionally, show the top features (important to know model's prediction rationale)
-        st.subheader("Model Interpretation")
-        st.write("""
-            The model uses two features: **Building Permits** and **Government Infrastructure Spending**. Both of these factors 
-            are known to have an impact on the economy and the stock market, especially in the infrastructure sector.
-        """)
-    else:
-        st.error("Model not loaded. Please upload a valid .pkl file.")
+        # User input for prediction (infrastructure data)
+        building_permits = st.sidebar.number_input("Building Permits (in billion)", min_value=0.0, step=0.1)
+        gov_infrastructure_spending = st.sidebar.number_input("Government Infrastructure Spending (in billion)", min_value=0.0, step=0.1)
+
+        # Create a DataFrame with user input
+        input_data = pd.DataFrame([[building_permits, gov_infrastructure_spending]], columns=['Building_Permits', 'Government_Infrastructure_Spending'])
+
+        # Predict using the model
+        if st.sidebar.button(f"Predict for {selected_stock}"):
+            if model:
+                prediction = model.predict(input_data)
+                st.write(f"Predicted Daily Return for {selected_stock}: {prediction[0]:.4f}")
+
+                # Additional details about the prediction
+                st.write("""
+                    The predicted daily return represents how much the stock price of the selected stock is likely to change based on the 
+                    given infrastructure data. A positive return indicates an increase, while a negative return represents a decrease.
+                """)
+                
+                # Optionally, show the top features (important to know model's prediction rationale)
+                st.subheader("Model Interpretation")
+                st.write("""
+                    The model uses two features: **Building Permits** and **Government Infrastructure Spending**. Both of these factors 
+                    are known to have an impact on the economy and the stock market, especially in the infrastructure sector.
+                """)
+            else:
+                st.error("Model not loaded. Please upload a valid .pkl file.")
+else:
+    st.write("Please select at least one stock to see the data and prediction.")
 
 # Running the app
 if __name__ == "__main__":
