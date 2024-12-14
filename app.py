@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import yfinance as yf
 import joblib
 from sklearn.neighbors import KNeighborsRegressor
-from io import BytesIO
 
 # Set up Streamlit title and description
 st.title("Infrastructure Impact on Stock Returns Prediction")
@@ -46,7 +46,32 @@ if model:
     else:
         st.write("Model performance details are not available.")
 
-# User input for prediction
+# User input for stock selection and prediction
+st.sidebar.header("Select Stock")
+
+# List of stock tickers to choose from
+stock_tickers = ['ITC.NS', 'TCS.NS', 'WIPRO.NS']
+
+# Stock selection dropdown
+selected_stock = st.sidebar.selectbox("Choose a stock:", stock_tickers)
+
+# Fetch stock data (adjusted close prices and returns)
+start_date = '2022-01-01'
+end_date = '2024-06-30'
+stock_data = yf.download(selected_stock, start=start_date, end=end_date)
+
+# Calculate daily returns for the selected stock
+stock_data['Daily_Return'] = stock_data['Adj Close'].pct_change().dropna()
+
+# Display stock data and returns
+st.subheader(f"Stock Data for {selected_stock}")
+st.write(stock_data[['Adj Close', 'Daily_Return']].tail(10))  # Show last 10 rows of stock data
+
+# Plot stock returns
+st.subheader(f"Daily Returns for {selected_stock}")
+st.line_chart(stock_data['Daily_Return'])
+
+# User input for prediction (infrastructure data)
 st.sidebar.header("Input Features")
 
 # Getting input from the user
@@ -65,7 +90,7 @@ if st.sidebar.button("Predict"):
 
         # Additional details about the prediction
         st.write("""
-            The predicted daily return represents how much the stock price of ITC is likely to change based on the 
+            The predicted daily return represents how much the stock price of the selected stock is likely to change based on the 
             given infrastructure data. A positive return indicates an increase, while a negative return represents a decrease.
         """)
         
@@ -77,7 +102,7 @@ if st.sidebar.button("Predict"):
         """)
     else:
         st.error("Model not loaded. Please upload a valid .pkl file.")
-        
+
 # Running the app
 if __name__ == "__main__":
     st.markdown("### Try entering different values for the features in the sidebar to predict the stock return.")
